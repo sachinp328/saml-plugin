@@ -22,37 +22,36 @@ import org.kohsuke.stapler.Stapler;
 import org.acegisecurity.providers.AbstractAuthenticationToken;
 import org.acegisecurity.context.SecurityContextHolder;
 
+import javax.servlet.http.HttpSession;
+
+import jenkins.model.Jenkins;
+import jenkins.security.SecurityListener;
+
 public class SamlAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = 2L;
 
   private final SamlUserDetails userDetails;
-  private final long expirationTime;
+  private final HttpSession session;
 
-  public SamlAuthenticationToken(SamlUserDetails userDetails, long expirationTime) {
+  public SamlAuthenticationToken(SamlUserDetails userDetails, HttpSession session) {
     super(userDetails.getAuthorities());
     this.userDetails = userDetails;
     this.setDetails(userDetails);
     this.setAuthenticated(true);
-    this.expirationTime = expirationTime;
-  }
-
-  public SamlAuthenticationToken(SamlUserDetails userDetails) {
-    this(userDetails, 0);
+    this.session = session;
   }
 
   public SamlUserDetails getPrincipal() {
     // check if session should have expired
-    if (expirationTime > 0 && System.currentTimeMillis() > expirationTime) {
-      // sometimes getCurrentRequest() returns null
-      if (Stapler.getCurrentRequest() != null) {
-        // terminate the current session
-        this.setAuthenticated(false);
-        if (Stapler.getCurrentRequest().getSession() != null) {
-          Stapler.getCurrentRequest().getSession().invalidate();
-        }
-        SecurityContextHolder.clearContext();
-      }
+    if (session.getAttribute(SamlSecurityRealm.EXPIRATION_ATTRIBUTE) != null &&
+        System.currentTimeMillis() > (long)session.getAttribute(SamlSecurityRealm.EXPIRATION_ATTRIBUTE)) {
+
+      // log the current user out and invalidate this session
+      this.setAuthenticated(false);
+      session.invalidate();
+      SecurityContextHolder.clearContext();
+      SecurityListener.fireLoggedOut(userDetails.getUsername());
     }
 
     return userDetails;

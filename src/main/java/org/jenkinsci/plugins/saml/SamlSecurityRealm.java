@@ -64,9 +64,9 @@ import jenkins.security.SecurityListener;
 public class SamlSecurityRealm extends SecurityRealm {
   public static final String CONSUMER_SERVICE_URL_PATH = "securityRealm/finishLogin";
 
-
   private static final Logger LOG = Logger.getLogger(SamlSecurityRealm.class.getName());
   private static final String REFERER_ATTRIBUTE = SamlSecurityRealm.class.getName() + ".referer";
+  protected static final String EXPIRATION_ATTRIBUTE = SamlSecurityRealm.class.getName() + ".expiration";
   private static final String DEFAULT_DISPLAY_NAME_ATTRIBUTE_NAME = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
   private static final String DEFAULT_GROUPS_ATTRIBUTE_NAME = "http://schemas.xmlsoap.org/claims/Group";
   private static final int DEFAULT_MAXIMUM_AUTHENTICATION_LIFETIME = 24 * 60 * 60; // 24h
@@ -219,12 +219,14 @@ public class SamlSecurityRealm extends SecurityRealm {
     SamlUserDetails userDetails = new SamlUserDetails(username, authorities.toArray(new GrantedAuthority[authorities.size()]));
     // set session expiration, if needed.
 
-    long expirationTime = 0;
     if (advancedConfiguration.getMaximumSessionLifetime() != null) {
-      expirationTime = System.currentTimeMillis() + 1000 * advancedConfiguration.getMaximumSessionLifetime();
+      request.getSession().setAttribute(
+        EXPIRATION_ATTRIBUTE,
+        System.currentTimeMillis() + 1000 * advancedConfiguration.getMaximumSessionLifetime()
+      );
     }
 
-    SamlAuthenticationToken samlAuthToken = new SamlAuthenticationToken(userDetails, expirationTime);
+    SamlAuthenticationToken samlAuthToken = new SamlAuthenticationToken(userDetails, request.getSession());
 
     // initialize security context
     SecurityContextHolder.getContext().setAuthentication(samlAuthToken);
@@ -296,11 +298,20 @@ public class SamlSecurityRealm extends SecurityRealm {
       client.setPrivateKeyPassword(encryptionData.getPrivateKeyPassword());
     }
     client.setMaximumAuthenticationLifetime(this.maximumAuthenticationLifetime);
+
     if (advancedConfiguration != null) {
+
+      // request forced authentication at the IdP, if selected
       client.setForceAuth(advancedConfiguration.getForceAuthn());
+
+      // override the default EntityId for this SP, if one is set
       if (advancedConfiguration.getSpEntityId() != null) {
         client.setSpEntityId(advancedConfiguration.getSpEntityId());
       }
+
+      // if a specific authentication type (authentication context class
+      // reference) is set, include it in the request to the IdP, and request
+      // that the IdP uses exact matching for authentication types
       if (advancedConfiguration.getAuthnContextClassRef() != null) {
         client.setAuthnContextClassRef(advancedConfiguration.getAuthnContextClassRef());
         client.setComparisonType("exact");
