@@ -25,7 +25,7 @@ under the License.
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.41</version>
+    <version>4.44</version>
   </parent>
 
   <artifactId>saml</artifactId>
@@ -44,7 +44,7 @@ under the License.
   <properties>
     <revision>2</revision>
     <changelist>999999-SNAPSHOT</changelist>
-    <jenkins.version>2.303.3</jenkins.version>
+    <jenkins.version>2.332.1</jenkins.version>
     <java.level>8</java.level>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
   </properties>
@@ -94,7 +94,6 @@ under the License.
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>jaxb</artifactId>
-      <version>2.3.6-1</version>
     </dependency>
     <dependency>
       <groupId>org.pac4j</groupId>
@@ -200,11 +199,21 @@ under the License.
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>mailer</artifactId>
+      <exclusions>
+        <!--
+          TODO When https://github.com/jenkinsci/jakarta-activation-api-plugin/pull/2 is merged and
+          released, this can be deleted. For now, exclude this dependency from the chain to prevent
+          a require upper bounds conflict with org.pac4j:pac4j-saml:3.9.0.
+        -->
+        <exclusion>
+          <groupId>com.sun.activation</groupId>
+          <artifactId>jakarta.activation</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>bouncycastle-api</artifactId>
-      <version>2.25</version>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -221,31 +230,22 @@ under the License.
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
-      <version>1462.v069a_b_57ff5c8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.jenkins.configuration-as-code</groupId>
       <artifactId>test-harness</artifactId>
-      <version>1429.v09b_044a_c93de</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>joda-time</groupId>
-          <artifactId>joda-time</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.17.2</version>
+      <version>1.17.3</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -263,8 +263,8 @@ under the License.
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.303.x</artifactId>
-        <version>1451.v15f1fdb_772a_f</version>
+        <artifactId>bom-2.332.x</artifactId>
+        <version>1542.vc795072f7236</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -276,18 +276,12 @@ under the License.
       <dependency>
         <groupId>org.apache.santuario</groupId>
         <artifactId>xmlsec</artifactId>
-        <version>2.3.0</version>
+        <version>3.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.woodstox</groupId>
         <artifactId>woodstox-core</artifactId>
         <version>6.2.7</version>
-      </dependency>
-      <!-- requireUpperBoundDeps between jaxb and mailer -->
-      <dependency>
-        <groupId>io.jenkins.plugins</groupId>
-        <artifactId>javax-activation-api</artifactId>
-        <version>1.2.0-3</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
